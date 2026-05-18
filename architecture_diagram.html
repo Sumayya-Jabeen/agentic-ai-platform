@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agentic AI Platform — System Architecture</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #fff;
+    color: #1e293b;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .header h1 {
+    font-size: 19px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.4px;
+  }
+  .header p {
+    font-size: 9.5px;
+    color: #64748b;
+    margin-top: 3px;
+  }
+
+  /* ── Layer wrapper ── */
+  .layer-row { margin-bottom: 5px; }
+
+  .layer-label {
+    font-size: 7.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    margin-bottom: 3px;
+    padding-left: 5px;
+  }
+
+  .layer-boxes { display: flex; gap: 8px; align-items: stretch; }
+
+  /* ── Generic box ── */
+  .box { border-radius: 8px; padding: 9px 12px; flex: 1; }
+  .box-title { font-size: 10px; font-weight: 700; margin-bottom: 5px; }
+  .box-items { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .tag {
+    font-size: 7.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  /* ── Colour themes ── */
+  .user-box  { background: #f8fafc; border: 2px solid #cbd5e1; text-align: center; }
+
+  .frontend-box  { background: #eff6ff; border: 1.5px solid #bfdbfe; }
+  .frontend-box  .box-title { color: #1d4ed8; }
+  .frontend-tag  { background: #dbeafe; color: #1d4ed8; }
+
+  .backend-box   { background: #f0fdf4; border: 1.5px solid #bbf7d0; }
+  .backend-box   .box-title { color: #15803d; }
+  .backend-tag   { background: #dcfce7; color: #15803d; }
+
+  .orch-box      { background: #faf5ff; border: 1.5px solid #e9d5ff; }
+  .orch-box      .box-title { color: #7c3aed; }
+  .orch-tag      { background: #ede9fe; color: #7c3aed; }
+
+  .skill-box     { background: #fdf4ff; border: 1.5px solid #f0abfc; }
+  .skill-box     .box-title { color: #a21caf; }
+  .skill-tag     { background: #fae8ff; color: #a21caf; }
+
+  .external-box  { background: #fffbeb; border: 1.5px solid #fde68a; }
+  .external-box  .box-title { color: #b45309; }
+  .external-tag  { background: #fef3c7; color: #b45309; }
+
+  /* ── Arrows ── */
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 3px 0;
+    gap: 32px;
+  }
+  .arrow-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  .arrow-label {
+    font-size: 7.5px;
+    color: #94a3b8;
+    font-style: italic;
+  }
+  .arrow-line {
+    width: 1.5px;
+    height: 11px;
+    background: #94a3b8;
+    position: relative;
+  }
+  .arrow-line::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #94a3b8;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 8px; color: #64748b; }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 7.5px;
+    color: #94a3b8;
+  }
+
+  /* ── Print button (hidden in print) ── */
+  .print-btn {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    padding: 8px 18px;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    z-index: 999;
+  }
+  .print-btn:hover { background: #1e40af; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<div class="header">
+  <h1>Agentic AI Platform &mdash; System Architecture</h1>
+  <p>Full-stack AI platform with modular skill routing, LangChain orchestration, and real-time SSE streaming</p>
+</div>
+
+<!-- ══ LAYER 1 · USER ═══════════════════════════════════════════════════════ -->
+<div class="layer-row">
+  <div class="layer-label" style="color:#64748b;">Layer 1 &mdash; Client</div>
+  <div class="layer-boxes">
+    <div class="box user-box">
+      <div class="box-title" style="font-size:11px; color:#334155;">&#128100; User / Browser</div>
+      <div style="font-size:8.5px; color:#64748b; margin-top:3px;">
+        Types a message &nbsp;·&nbsp; Voice input &nbsp;·&nbsp; Views token-by-token streamed response &nbsp;·&nbsp; Manages conversation sessions
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Arrow -->
+<div class="arrow-row">
+  <div class="arrow-item">
+    <div class="arrow-label">HTTP / SSE stream</div>
+    <div class="arrow-line"></div>
+  </div>
+</div>
+
+<!-- ══ LAYER 2 · FRONTEND ════════════════════════════════════════════════════ -->
+<div class="layer-row">
+  <div class="layer-label" style="color:#1d4ed8;">Layer 2 &mdash; Frontend &nbsp;&middot;&nbsp; Next.js &middot; TypeScript &middot; Tailwind CSS</div>
+  <div class="layer-boxes">
+
+    <div class="box frontend-box">
+      <div class="box-title">UI Components</div>
+      <div class="box-items">
+        <span class="tag frontend-tag">ChatWindow</span>
+        <span class="tag frontend-tag">MessageBubble</span>
+        <span class="tag frontend-tag">InputBar</span>
+        <span class="tag frontend-tag">Sidebar</span>
+      </div>
+    </div>
+
+    <div class="box frontend-box">
+      <div class="box-title">State &amp; Data Flow</div>
+      <div class="box-items">
+        <span class="tag frontend-tag">useChat hook</span>
+        <span class="tag frontend-tag">SSE token streaming</span>
+        <span class="tag frontend-tag">Session management</span>
+        <span class="tag frontend-tag">AbortController</span>
+      </div>
+    </div>
+
+    <div class="box frontend-box">
+      <div class="box-title">Features</div>
+      <div class="box-items">
+        <span class="tag frontend-tag">Markdown + code highlight</span>
+        <span class="tag frontend-tag">Voice input</span>
+        <span class="tag frontend-tag">Dark mode</span>
+        <span class="tag frontend-tag">Export chat</span>
+        <span class="tag frontend-tag">Pin sessions</span>
+        <span class="tag frontend-tag">Browser notifications</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Arrow -->
+<div class="arrow-row">
+  <div class="arrow-item">
+    <div class="arrow-label">POST /chat (SSE) &nbsp;&middot;&nbsp; POST /research &nbsp;&middot;&nbsp; POST /plan &nbsp;&middot;&nbsp; GET /health</div>
+    <div class="arrow-line"></div>
+  </div>
+</div>
+
+<!-- ══ LAYER 3 · BACKEND ═════════════════════════════════════════════════════ -->
+<div class="layer-row">
+  <div class="layer-label" style="color:#15803d;">Layer 3 &mdash; Backend &nbsp;&middot;&nbsp; FastAPI &middot; Python</div>
+  <div class="layer-boxes">
+
+    <div class="box backend-box">
+      <div class="box-title">Middleware</div>
+      <div class="box-items">
+        <span class="tag backend-tag">API Key Auth (X-API-Key)</span>
+        <span class="tag backend-tag">CORS</span>
+        <span class="tag backend-tag">Request / Response Logging</span>
+      </div>
+    </div>
+
+    <div class="box backend-box">
+      <div class="box-title">API Routes</div>
+      <div class="box-items">
+        <span class="tag backend-tag">POST /chat &rarr; SSE stream</span>
+        <span class="tag backend-tag">POST /research</span>
+        <span class="tag backend-tag">POST /plan</span>
+        <span class="tag backend-tag">GET /health</span>
+      </div>
+    </div>
+
+    <div class="box backend-box">
+      <div class="box-title">Session Management</div>
+      <div class="box-items">
+        <span class="tag backend-tag">ConversationHistory</span>
+        <span class="tag backend-tag">UUID session IDs</span>
+        <span class="tag backend-tag">Last 10 turns per session</span>
+        <span class="tag backend-tag">In-memory store</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Arrow -->
+<div class="arrow-row">
+  <div class="arrow-item">
+    <div class="arrow-label">user message + conversation history</div>
+    <div class="arrow-line"></div>
+  </div>
+</div>
+
+<!-- ══ LAYER 4 · ORCHESTRATOR + SKILLS ══════════════════════════════════════ -->
+<div class="layer-row">
+  <div class="layer-label" style="color:#7c3aed;">Layer 4 &mdash; Orchestration &amp; AI Skills &nbsp;&middot;&nbsp; LangChain Agent</div>
+  <div class="layer-boxes">
+
+    <div class="box orch-box" style="flex:0.75;">
+      <div class="box-title">Orchestrator</div>
+      <div class="box-items">
+        <span class="tag orch-tag">LangChain Agent</span>
+        <span class="tag orch-tag">Auto skill routing</span>
+        <span class="tag orch-tag">Tool call loop</span>
+        <span class="tag orch-tag">PipelineLogger callbacks</span>
+        <span class="tag orch-tag">Token streaming (astream_events)</span>
+      </div>
+    </div>
+
+    <div class="box skill-box">
+      <div class="box-title">&#128269; Research &amp; Summarization Skill</div>
+      <div class="box-items">
+        <span class="tag skill-tag">Phase 1 — Web search agent loop (3–5 searches)</span>
+        <span class="tag skill-tag">Phase 2 — Structured synthesis via LLM</span>
+        <span class="tag skill-tag">ResearchInput / ResearchOutput (Pydantic)</span>
+        <span class="tag skill-tag">Credibility scoring per source</span>
+        <span class="tag skill-tag">Key points · Gaps · Confidence score</span>
+      </div>
+    </div>
+
+    <div class="box skill-box">
+      <div class="box-title">&#128203; Task Planning &amp; Execution Skill</div>
+      <div class="box-items">
+        <span class="tag skill-tag">Step 1 — Structured plan generation</span>
+        <span class="tag skill-tag">Step 2 — Dependency-ordered execution</span>
+        <span class="tag skill-tag">TaskPlanInput / TaskPlanOutput (Pydantic)</span>
+        <span class="tag skill-tag">Task IDs · Dependencies · Duration estimates</span>
+        <span class="tag skill-tag">Status tracking: pending / completed / skipped</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Arrow -->
+<div class="arrow-row">
+  <div class="arrow-item">
+    <div class="arrow-label">LLM completions &amp; structured output</div>
+    <div class="arrow-line"></div>
+  </div>
+  <div class="arrow-item">
+    <div class="arrow-label">web search queries</div>
+    <div class="arrow-line"></div>
+  </div>
+</div>
+
+<!-- ══ LAYER 5 · EXTERNAL SERVICES ══════════════════════════════════════════ -->
+<div class="layer-row">
+  <div class="layer-label" style="color:#b45309;">Layer 5 &mdash; External Services</div>
+  <div class="layer-boxes">
+
+    <div class="box external-box">
+      <div class="box-title">&#129302; OpenAI API</div>
+      <div class="box-items">
+        <span class="tag external-tag">GPT-4o model</span>
+        <span class="tag external-tag">Structured output (with_structured_output)</span>
+        <span class="tag external-tag">LLM reasoning &amp; response generation</span>
+        <span class="tag external-tag">Token-by-token streaming</span>
+      </div>
+    </div>
+
+    <div class="box external-box">
+      <div class="box-title">&#127757; Tavily Search API</div>
+      <div class="box-items">
+        <span class="tag external-tag">Real-time web search</span>
+        <span class="tag external-tag">Source &amp; snippet retrieval</span>
+        <span class="tag external-tag">3–5 sources per research query</span>
+        <span class="tag external-tag">Used exclusively by Research Skill</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ LEGEND ════════════════════════════════════════════════════════════════ -->
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#bfdbfe; border:1px solid #93c5fd;"></div>Frontend (Next.js)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#bbf7d0; border:1px solid #86efac;"></div>Backend (FastAPI)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#e9d5ff; border:1px solid #d8b4fe;"></div>Orchestrator (LangChain)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#f0abfc; border:1px solid #e879f9;"></div>AI Skills (Modular)
+  </div>
+  <div class="legend-item">
+    <div class="legend-dot" style="background:#fde68a; border:1px solid #fbbf24;"></div>External APIs
+  </div>
+  <div class="legend-item" style="margin-left:auto; color:#94a3b8;">
+    &#x2192; Arrows indicate data flow direction
+  </div>
+</div>
+
+<!-- ══ FOOTER ════════════════════════════════════════════════════════════════ -->
+<div class="footer">
+  Agentic AI Platform &nbsp;&middot;&nbsp; System Architecture v1.0 &nbsp;&middot;&nbsp;
+  Stack: FastAPI &middot; LangChain &middot; Next.js &middot; TypeScript &middot; Tailwind CSS &middot; OpenAI GPT-4o &middot; Tavily Search
+</div>
+
+</body>
+</html>
