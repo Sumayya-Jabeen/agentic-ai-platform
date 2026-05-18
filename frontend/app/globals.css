@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Custom scrollbar for the chat window */
+.chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark .chat-scroll::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+/* Markdown content styling */
+.md-content h1 { font-size: 1.15rem; font-weight: 700; margin: 0.6rem 0 0.3rem; line-height: 1.4; }
+.md-content h2 { font-size: 1.05rem; font-weight: 700; margin: 0.5rem 0 0.25rem; line-height: 1.4; }
+.md-content h3 { font-size: 0.95rem; font-weight: 600; margin: 0.4rem 0 0.2rem; line-height: 1.4; }
+.md-content p  { margin: 0 0 0.5rem; }
+.md-content p:last-child { margin-bottom: 0; }
+.md-content strong { font-weight: 700; }
+.md-content em { font-style: italic; }
+.md-content ul { list-style-type: disc; padding-left: 1.25rem; margin: 0.25rem 0 0.5rem; }
+.md-content ol { list-style-type: decimal; padding-left: 1.25rem; margin: 0.25rem 0 0.5rem; }
+.md-content li { margin: 0.15rem 0; }
+.md-content a  { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+.md-content a:hover { color: #1d4ed8; }
+.md-content blockquote { border-left: 2px solid #cbd5e1; padding-left: 0.75rem; color: #64748b; font-style: italic; margin: 0.5rem 0; }
+.md-content hr { border-color: #e2e8f0; margin: 0.75rem 0; }
+.md-content pre { margin: 0.5rem 0; border-radius: 0.5rem; overflow: auto; }
+.md-content code { font-family: ui-monospace, monospace; font-size: 0.8em; background: #f1f5f9; padding: 0.1em 0.3em; border-radius: 0.25rem; }
+.md-content pre code { background: transparent; padding: 0; font-size: inherit; }
+
+.dark .md-content a  { color: #60a5fa; }
+.dark .md-content a:hover { color: #93c5fd; }
+.dark .md-content blockquote { border-color: #475569; color: #94a3b8; }
+.dark .md-content hr { border-color: #334155; }
+.dark .md-content code { background: #1e293b; color: #e2e8f0; }
