@@ -1,0 +1,201 @@
+"use client";
+
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
+
+type Props = {
+  onSend: (message: string) => void;
+  onStop?: () => void;
+  isLoading: boolean;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onresult: ((e: any) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    SpeechRecognition: new () => SpeechRecognitionInstance;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
+  }
+}
+
+export default function InputBar({ onSend, onStop, isLoading }: Props) {
+  const [text, setText] = useState("");
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [hasSpeech, setHasSpeech] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    setHasSpeech(true);
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    rec.onresult = (e) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transcript = Array.from(e.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setText(transcript);
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+    recognitionRef.current = rec;
+  }, []);
+
+  const toggleVoice = () => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (isListening) {
+      rec.stop();
+    } else {
+      setText("");
+      rec.start();
+      setIsListening(true);
+    }
+  };
+
+  const handleSend = () => {
+    if (!text.trim() || isLoading) return;
+    onSend(text.trim());
+    setText("");
+    setAttachedFile(null);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setAttachedFile(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 px-4 py-4 shrink-0 rounded-b-2xl">
+      <div className="max-w-3xl mx-auto">
+
+        {/* File chip */}
+        {attachedFile && (
+          <div className="flex items-center gap-1.5 mb-2 px-1">
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs px-2.5 py-1 rounded-full">
+              <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              <span className="max-w-[200px] truncate">{attachedFile.name}</span>
+              <button
+                onClick={() => setAttachedFile(null)}
+                className="ml-0.5 text-slate-400 hover:text-slate-600 transition-colors"
+                title="Remove attachment"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-2xl px-3 py-2 shadow-sm focus-within:border-slate-400 dark:focus-within:border-slate-500 focus-within:ring-2 focus-within:ring-slate-100 dark:focus-within:ring-slate-700 transition-all">
+
+          {/* Hidden file input */}
+          <input ref={fileInputRef} type="file" onChange={handleFileChange} className="hidden" />
+
+          {/* Attachment button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach file"
+            disabled={isLoading}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors shrink-0 mb-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-slate-200 dark:bg-slate-600 shrink-0 mb-0.5" />
+
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isListening ? "Listening…" : "Ask me anything..."}
+            rows={1}
+            disabled={isLoading}
+            className="flex-1 resize-none bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none disabled:opacity-60 max-h-36 overflow-y-auto py-1"
+            style={{ minHeight: "28px" }}
+          />
+
+          {/* Voice input button */}
+          {hasSpeech && !isLoading && (
+            <button
+              onClick={toggleVoice}
+              title={isListening ? "Stop listening" : "Voice input"}
+              className={`p-1.5 rounded-lg transition-colors shrink-0 mb-0.5 ${
+                isListening
+                  ? "text-red-500 bg-red-50 dark:bg-red-950 animate-pulse"
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+          )}
+
+          {/* Stop / Send button */}
+          {isLoading ? (
+            <button
+              onClick={onStop}
+              title="Stop generating"
+              className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all shrink-0 mb-0.5 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="6" width="12" height="12" rx="1" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!text.trim()}
+              className="p-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 mb-0.5 shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
