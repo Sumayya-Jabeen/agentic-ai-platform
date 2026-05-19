@@ -38,6 +38,8 @@ class ConversationHistory:
     def __init__(self):
         # Dict of session_id → Session
         self._sessions: dict[str, Session] = {}
+        # Dict of session_id → custom title (set via rename)
+        self._titles: dict[str, str] = {}
 
     def create_session(self, session_id: Optional[str] = None) -> str:
         """
@@ -101,9 +103,10 @@ class ConversationHistory:
             if not user_messages:
                 continue
             first = user_messages[0].content
+            auto_title = first[:60] + ("..." if len(first) > 60 else "")
             result.append({
                 "session_id": session_id,
-                "title": first[:60] + ("..." if len(first) > 60 else ""),
+                "title": self._titles.get(session_id, auto_title),
                 "preview": first[:100] + ("..." if len(first) > 100 else ""),
                 "message_count": len(session.messages),
             })
@@ -127,10 +130,15 @@ class ConversationHistory:
             return []
         return self._sessions[session_id].messages
 
+    def rename_session(self, session_id: str, title: str):
+        """Set a custom title for a session."""
+        self._titles[session_id] = title.strip()
+
     def clear_session(self, session_id: str):
         """Delete all messages for a session."""
         if session_id in self._sessions:
             del self._sessions[session_id]
+        self._titles.pop(session_id, None)
 
 
 # Single shared instance used across all routes

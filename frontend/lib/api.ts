@@ -92,6 +92,13 @@ export async function getSessions(): Promise<SessionsResponse> {
   return apiFetch<SessionsResponse>("/sessions");
 }
 
+export async function renameSession(sessionId: string, title: string): Promise<void> {
+  await apiFetch<{ message: string; title: string }>(`/sessions/${sessionId}/rename`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+  });
+}
+
 /**
  * Stream a message token-by-token via Server-Sent Events.
  * Calls onToken for each token as it arrives.

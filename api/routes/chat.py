@@ -166,6 +166,28 @@ async def get_history(session_id: str):
     )
 
 
+class RenameRequest(BaseModel):
+    title: str
+
+
+@router.patch("/sessions/{session_id}/rename", dependencies=[Depends(verify_api_key)])
+async def rename_session(session_id: str, body: RenameRequest):
+    """Rename a session with a custom title."""
+    if not history_manager.get_messages(session_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No session found for session_id: {session_id}"
+        )
+    if not body.title.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Title cannot be empty."
+        )
+    history_manager.rename_session(session_id, body.title)
+    logger.info(f"[CHAT] Session renamed | session: {session_id[:8]} | title: '{body.title}'")
+    return {"message": "Session renamed successfully", "title": body.title.strip()}
+
+
 @router.delete("/history/{session_id}", dependencies=[Depends(verify_api_key)])
 async def clear_history(session_id: str):
     """
