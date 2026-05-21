@@ -9,15 +9,16 @@ from config import config
 logger = logging.getLogger("api")
 
 SYSTEM_PROMPT = """You are a task planning expert. Given a high-level goal, break it down
-into a concrete, ordered list of actionable tasks. Maximum 5 tasks.
+into a concrete, ordered list of actionable tasks.
 
-For each task:
-- Give it a unique id like 'task_1', 'task_2'
-- Keep the title short and description to 1 sentence
-- List dependencies (task ids that must finish first)
-- Provide a short estimated_duration like '1 hour' or '2 days'
+For each task follow these rules:
+- Give it a unique id like 'task_1', 'task_2', and so on
+- Make the title short and the description specific and actionable
+- List dependencies — which task ids must finish before this one can start
+- Set tool_required to 'research_skill' if the task needs information gathering, otherwise leave it null
+- Provide a realistic estimated_duration like '30 minutes' or '1 week'
 
-Be concise. Do not over-engineer."""
+Keep the plan focused and practical. Do not over-engineer."""
 
 
 class TaskPlannerSkill:

@@ -19,10 +19,10 @@ SYSTEM_PROMPT = """You are an intelligent assistant with access to two powerful 
 2. create_task_plan — breaks a goal into an ordered, actionable task plan
 
 Rules — follow these strictly:
-- If the user asks for a plan, steps, roadmap, or "how to do X" → call create_task_plan DIRECTLY (no research needed)
-- If the user explicitly asks to research a topic, or asks "what is / which is / how does" → call research_topic
-- If the user explicitly asks to BOTH research AND plan → call research_topic first, then pass its summary into create_task_plan
-- For simple greetings or clarification questions (e.g. "hello", "thank you") → answer directly without calling any skill
+- ANY question asking about a topic, technology, comparison, or "what is / which is / how does" → call research_topic
+- ANY request for a plan, steps, roadmap, or "how to do X" → call create_task_plan
+- If the user asks to research AND plan → call research_topic first, then pass its summary into create_task_plan
+- Only skip the skills for simple greetings or clarification questions (e.g. "hello", "thank you")
 - After all skill calls are done, write a clear, helpful final response to the user
 - Always end your final response with a single, short follow-up question on a new line that naturally continues the conversation. The question must be directly relevant to what was just discussed. Examples based on context:
   - After researching a topic: "Would you like me to create an action plan based on this research?"
@@ -30,8 +30,8 @@ Rules — follow these strictly:
   - After explaining a concept: "Would you like me to research the latest developments on this?"
   - After a general answer: "Is there a specific aspect you'd like me to explore further?"
 
-Always be concise and practical in your final response. Keep responses short — 3 to 5 sentences max unless the user asks for detail.
-- Format all responses using Markdown: use **bold** for key terms, `code` for technical terms, and bullet lists for multi-item content."""
+Always be concise and practical in your final response.
+- Format all responses using Markdown: use **bold** for key terms, *italic* for emphasis, `code` for technical terms, headers (##, ###) to separate sections, and bullet or numbered lists for any multi-item content."""
 
 
 class Orchestrator:
@@ -54,73 +54,26 @@ class Orchestrator:
         self.task_planner = TaskPlannerSkill(research_skill=self.research_skill)
 
     async def stream(self, user_goal: str, session_id: str = "", history: list = None):
-        """Stream response tokens using fast 2-step pipeline: classify intent then execute."""
+        """Stream final response tokens, skipping internal tool-call JSON."""
         from langchain_openai import ChatOpenAI as _ChatOpenAI
-
-        # Step 1: Quick intent classification (max 10 tokens)
-        intent_llm = _ChatOpenAI(
+        streaming_llm = _ChatOpenAI(
             model=config.model,
             api_key=config.openai_api_key,
-            max_completion_tokens=10,
+            max_completion_tokens=config.max_completion_tokens,
+            streaming=True,
         )
-        intent_result = await intent_llm.ainvoke([
-            ("system", "Classify the user's request as exactly one word: PLAN, RESEARCH, or CHAT."),
-            ("human", user_goal)
-        ])
-        intent = intent_result.content.strip().upper()
+        tools = self._build_tools()
+        agent = create_agent(model=streaming_llm, tools=tools, system_prompt=SYSTEM_PROMPT)
+        messages_input = list(history) if history else []
+        messages_input.append(("human", user_goal))
 
-        # Step 2: Execute based on intent
-        if "PLAN" in intent:
-            output = self.task_planner.run(TaskPlanInput(
-                goal=user_goal,
-                execution_mode=ExecutionMode.PLAN_ONLY,
-                max_tasks=5
-            ))
-            response = self._format_plan(output)
-            for char in response:
-                yield char
-
-        elif "RESEARCH" in intent:
-            output = self.research_skill.run(ResearchInput(query=user_goal))
-            response = self._format_research(output)
-            for char in response:
-                yield char
-
-        else:
-            # Direct streaming LLM for chat
-            streaming_llm = _ChatOpenAI(
-                model=config.model,
-                api_key=config.openai_api_key,
-                max_completion_tokens=config.max_completion_tokens,
-                streaming=True,
-            )
-            messages_input = list(history) if history else []
-            messages_input.append(("human", user_goal))
-            async for chunk in streaming_llm.astream(messages_input):
-                if isinstance(chunk.content, str) and chunk.content:
+        async for event in agent.astream_events({"messages": messages_input}, version="v2"):
+            if event["event"] == "on_chat_model_stream":
+                chunk = event["data"]["chunk"]
+                if (isinstance(chunk.content, str)
+                        and chunk.content
+                        and not getattr(chunk, "tool_call_chunks", None)):
                     yield chunk.content
-
-    def _format_plan(self, output) -> str:
-        lines = ["## Task Plan\n"]
-        for i, task in enumerate(output.plan, 1):
-            lines.append(f"**{i}. {task.title}**")
-            lines.append(f"{task.description}")
-            if task.depends_on:
-                lines.append(f"*Depends on: {', '.join(task.depends_on)}*")
-            lines.append(f"⏱ {task.estimated_duration}\n")
-        if output.next_action:
-            lines.append(f"**Next action:** {output.next_action}")
-        return "\n".join(lines)
-
-    def _format_research(self, output) -> str:
-        lines = [f"## Research Summary\n", output.summary, "\n### Key Points\n"]
-        for point in output.key_points:
-            lines.append(f"- {point}")
-        if output.sources:
-            lines.append("\n### Sources\n")
-            for s in output.sources:
-                lines.append(f"- [{s.title}]({s.url})")
-        return "\n".join(lines)
 
     def run(self, user_goal: str, session_id: str = "", history: list = None) -> str:
         """
@@ -241,8 +194,7 @@ class Orchestrator:
                 output = task_planner.run(TaskPlanInput(
                     goal=goal,
                     context=context if context else None,
-                    execution_mode=ExecutionMode.PLAN_ONLY,
-                    max_tasks=5
+                    execution_mode=ExecutionMode.PLAN_ONLY
                 ))
             except Exception as e:
                 logger.error(f"  TASK PLANNING SKILL FAILED: {type(e).__name__}: {e}")
