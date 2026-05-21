@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { useState, useRef, KeyboardEvent } from "react";
 
 type Props = {
   onSend: (message: string) => void;
@@ -8,68 +8,11 @@ type Props = {
   isLoading: boolean;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionInstance = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onresult: ((e: any) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
-
-declare global {
-  interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SpeechRecognition: new () => SpeechRecognitionInstance;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    webkitSpeechRecognition: new () => SpeechRecognitionInstance;
-  }
-}
-
 export default function InputBar({ onSend, onStop, isLoading }: Props) {
   const [text, setText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
-  const [isListening, setIsListening] = useState(false);
-  const [hasSpeech, setHasSpeech] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-
-  useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    setHasSpeech(true);
-    const rec = new SR();
-    rec.continuous = false;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-    rec.onresult = (e) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const transcript = Array.from(e.results as any[])
-        .map((r: any) => r[0].transcript)
-        .join("");
-      setText(transcript);
-    };
-    rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
-    recognitionRef.current = rec;
-  }, []);
-
-  const toggleVoice = () => {
-    const rec = recognitionRef.current;
-    if (!rec) return;
-    if (isListening) {
-      rec.stop();
-    } else {
-      setText("");
-      rec.start();
-      setIsListening(true);
-    }
-  };
 
   const handleSend = () => {
     if (!text.trim() || isLoading) return;
@@ -144,30 +87,12 @@ export default function InputBar({ onSend, onStop, isLoading }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isListening ? "Listening…" : "Ask me anything..."}
+            placeholder="Ask me anything..."
             rows={1}
             disabled={isLoading}
             className="flex-1 resize-none bg-transparent text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none disabled:opacity-60 max-h-36 overflow-y-auto py-1"
             style={{ minHeight: "28px" }}
           />
-
-          {/* Voice input button */}
-          {hasSpeech && !isLoading && (
-            <button
-              onClick={toggleVoice}
-              title={isListening ? "Stop listening" : "Voice input"}
-              className={`p-1.5 rounded-lg transition-colors shrink-0 mb-0.5 ${
-                isListening
-                  ? "text-red-500 bg-red-50 dark:bg-red-950 animate-pulse"
-                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </button>
-          )}
 
           {/* Stop / Send button */}
           {isLoading ? (
