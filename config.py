@@ -10,7 +10,7 @@ class Config:
     openai_api_key: str = field(default_factory=lambda: os.getenv("OPENAI_API_KEY", ""))
     tavily_api_key: str = field(default_factory=lambda: os.getenv("TAVILY_API_KEY", ""))
     api_secret_key: str = field(default_factory=lambda: os.getenv("API_SECRET_KEY", ""))
-    model: str = "gpt-5-nano"
+    model: str = field(default_factory=lambda: os.getenv("MODEL", "gpt-4o-mini"))
     max_completion_tokens: int = 16000
     max_search_results: int = 5
     max_agentic_iterations: int = 5
