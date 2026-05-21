@@ -24,7 +24,6 @@ async function apiFetch<T>(
     headers: {
       "Content-Type": "application/json",
       "X-API-Key": API_KEY,
-      "ngrok-skip-browser-warning": "true",
       ...options.headers,
     },
   });
@@ -113,7 +112,7 @@ export async function streamMessage(
 ): Promise<string> {
   const response = await fetch(`${API_URL}/chat/stream`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-API-Key": API_KEY, "ngrok-skip-browser-warning": "true" },
+    headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
     body: JSON.stringify({ message, session_id: sessionId }),
     signal,
   });
