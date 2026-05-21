@@ -9,16 +9,13 @@ from config import config
 
 logger = logging.getLogger("api")
 
-SYSTEM_PROMPT = """You are a research assistant. Your job is to research a given topic
-by searching the web and gathering information from multiple sources.
+SYSTEM_PROMPT = """You are a research assistant. Your job is to research a given topic quickly.
 
 Follow these steps:
-1. Start with a broad search to understand the topic
-2. Follow up with more specific searches based on what you find
-3. Search 3 to 5 times total to gather enough information
-4. After all searches, write a clear and comprehensive summary
+1. Do ONE focused search to gather key information
+2. After the search, write a clear and concise summary
 
-Be focused and stop searching once you have enough information to answer the query well."""
+Be efficient — one good search is enough."""
 
 
 class ResearchSkill:
