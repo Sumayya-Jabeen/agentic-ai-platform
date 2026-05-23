@@ -3,8 +3,10 @@
 .env.local
 .env.*.local
 backend/.env
+backend/.env.backend
 frontend/.env
 frontend/.env.local
+frontend/.env.frontend
 
 # Python
 __pycache__/
