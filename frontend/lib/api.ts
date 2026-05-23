@@ -8,7 +8,11 @@ import {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_URL = `http://${window.location.hostname}:8000`;
+function getApiUrl(): string {
+  if (typeof window === "undefined") return "http://localhost:8000";
+  return `http://${window.location.hostname}:8000`;
+}
+
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
 // ─── Base fetch helper ────────────────────────────────────────────────────────
@@ -19,7 +23,7 @@ async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -110,7 +114,7 @@ export async function streamMessage(
   onToken: (token: string) => void,
   signal?: AbortSignal
 ): Promise<string> {
-  const response = await fetch(`${API_URL}/chat/stream`, {
+  const response = await fetch(`${getApiUrl()}/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-API-Key": API_KEY },
     body: JSON.stringify({ message, session_id: sessionId }),

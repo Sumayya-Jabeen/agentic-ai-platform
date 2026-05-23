@@ -23,13 +23,14 @@ fi
 echo "[2/4] Checking backend dependencies..."
 pip install -r backend/requirements.txt -q
 
-# Build frontend if out/ folder is missing
-if [ ! -d "frontend/out" ]; then
-  echo "[3/4] Building frontend (first time)..."
-  cd frontend && npm install && npm run build && cd ..
-else
-  echo "[3/4] Frontend build found — skipping build"
+# Always rebuild frontend so the latest code is served
+echo "[3/4] Building frontend..."
+cd frontend
+if [ ! -d "node_modules" ]; then
+  npm install
 fi
+npm run build
+cd ..
 
 # Start backend
 echo "[4/4] Starting backend on port 8000..."
