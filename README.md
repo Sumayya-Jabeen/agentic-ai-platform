@@ -11,9 +11,12 @@ An AI-powered agentic client platform with modular skill routing, real-time stre
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Skills](#skills)
+- [Prerequisites](#prerequisites)
 - [Setup](#setup)
 - [Environment Variables](#environment-variables)
 - [Running the Platform](#running-the-platform)
+- [Verify Everything Works](#verify-everything-works)
+- [Production Build](#production-build)
 - [API Reference](#api-reference)
 - [Frontend Features](#frontend-features)
 - [Contributors](#contributors)
@@ -66,10 +69,10 @@ Orchestrator  (LangChain Agent)
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 15, TypeScript, Tailwind CSS |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python 3.11+ |
 | AI Orchestration | LangChain, LangChain-OpenAI |
-| LLM | OpenAI GPT (configurable model) |
+| LLM | OpenAI GPT (configurable via `MODEL` env variable) |
 | Web Search | Tavily Search API |
 | Data Validation | Pydantic v2 |
 | Streaming | Server-Sent Events (SSE) |
@@ -83,52 +86,51 @@ Orchestrator  (LangChain Agent)
 ```
 agentic-ai-platform/
 │
-├── api/                        # FastAPI application
-│   ├── main.py                 # App entry point, middleware registration
-│   ├── middleware/
-│   │   ├── auth.py             # API key authentication
-│   │   └── logging.py          # Request/response logging middleware
-│   ├── models/
-│   │   └── requests.py         # FastAPI request/response models
-│   ├── routes/
-│   │   ├── chat.py             # /chat, /sessions, /history endpoints
-│   │   ├── research.py         # /research direct skill endpoint
-│   │   └── plan.py             # /plan direct skill endpoint
-│   └── services/
-│       └── history.py          # In-memory conversation session manager
+├── backend/                        # All backend (Python / FastAPI) code
+│   ├── .env.backend                # Backend secrets — never commit this
+│   ├── requirements.txt            # Python dependencies
+│   ├── api/                        # FastAPI application
+│   │   ├── main.py                 # App entry point, middleware registration
+│   │   ├── middleware/
+│   │   │   ├── auth.py             # API key authentication
+│   │   │   └── logging.py          # Request/response logging middleware
+│   │   ├── models/
+│   │   │   └── requests.py         # FastAPI request/response models
+│   │   ├── routes/
+│   │   │   ├── chat.py             # /chat, /sessions, /history endpoints
+│   │   │   ├── research.py         # /research direct skill endpoint
+│   │   │   └── plan.py             # /plan direct skill endpoint
+│   │   └── services/
+│   │       └── history.py          # In-memory conversation session manager
+│   ├── skills/
+│   │   ├── research.py             # Research & Summarization Skill
+│   │   └── task_planner.py         # Task Planning & Execution Skill
+│   ├── tools/
+│   │   ├── web_search.py           # Tavily web search tool wrapper
+│   │   └── executor.py             # Task execution engine
+│   ├── tests/                      # pytest test suite
+│   ├── orchestrator.py             # LangChain agent — routes to skills
+│   ├── models.py                   # Pydantic input/output schemas for skills
+│   ├── callbacks.py                # LangChain pipeline logging callbacks
+│   └── config.py                   # Environment config loader
 │
-├── skills/
-│   ├── research.py             # Research & Summarization Skill
-│   └── task_planner.py         # Task Planning & Execution Skill
-│
-├── tools/
-│   ├── web_search.py           # Tavily web search tool wrapper
-│   └── executor.py             # Task execution engine
-│
-├── orchestrator.py             # LangChain agent — routes to skills
-├── models.py                   # Pydantic input/output schemas for skills
-├── callbacks.py                # LangChain pipeline logging callbacks
-├── config.py                   # Environment config loader
-│
-├── frontend/                   # Next.js application
+├── frontend/                       # All frontend (Next.js / TypeScript) code
+│   ├── .env.frontend               # Frontend secrets — never commit this
 │   ├── app/
-│   │   ├── chat/page.tsx       # Main chat page
-│   │   ├── layout.tsx          # Root layout
-│   │   └── globals.css         # Global styles + Markdown CSS
+│   │   ├── chat/page.tsx           # Main chat page
+│   │   ├── layout.tsx              # Root layout
+│   │   └── globals.css             # Global styles + Markdown CSS
 │   ├── components/
-│   │   ├── ChatWindow.tsx      # Message list + pinned messages bar
-│   │   ├── MessageBubble.tsx   # Individual message with Markdown rendering
-│   │   ├── InputBar.tsx        # Text input with voice and file attachment
-│   │   └── Sidebar.tsx         # Session history with search, pin, rename
+│   │   ├── ChatWindow.tsx          # Message list + pinned messages bar
+│   │   ├── MessageBubble.tsx       # Individual message with Markdown rendering
+│   │   ├── InputBar.tsx            # Text input with file attachment
+│   │   └── Sidebar.tsx             # Session history with search, pin, rename
 │   ├── hooks/
-│   │   └── useChat.ts          # Core chat state, streaming, session logic
+│   │   └── useChat.ts              # Core chat state, streaming, session logic
 │   └── lib/
-│       ├── api.ts              # API client functions
-│       └── types.ts            # Shared TypeScript types
+│       ├── api.ts                  # API client functions
+│       └── types.ts                # Shared TypeScript types
 │
-├── .env                        # Secret keys (never commit this)
-├── requirements.txt            # Python dependencies
-├── architecture_diagram.html   # System architecture diagram
 └── README.md
 ```
 
@@ -190,18 +192,21 @@ blockers: List[str]                 # Skipped tasks and reasons
 
 ---
 
-## Setup
+## Prerequisites
 
-### Prerequisites
+Before you begin, make sure the following are installed on your machine:
 
-- Python 3.11+
-- Node.js 18+
-- OpenAI API key — [platform.openai.com](https://platform.openai.com)
-- Tavily API key — [tavily.com](https://tavily.com)
+- **Python 3.11+** — [python.org](https://python.org)
+- **Node.js 18+** and **npm** — [nodejs.org](https://nodejs.org)
+- **Git** — [git-scm.com](https://git-scm.com)
+- **OpenAI API key** — [platform.openai.com](https://platform.openai.com)
+- **Tavily API key** — [tavily.com](https://tavily.com)
 
 ---
 
-### 1. Clone the repository
+## Setup
+
+### Step 1 — Clone the repository
 
 ```bash
 git clone https://github.com/Sumayya-Jabeen/agentic-ai-platform.git
@@ -210,79 +215,187 @@ cd agentic-ai-platform
 
 ---
 
-### 2. Backend setup
+### Step 2 — Create a Python virtual environment
 
 ```bash
-# Create and activate a virtual environment
 python -m venv venv
+```
 
+Activate it:
+
+```bash
 # Windows
 venv\Scripts\activate
 
 # macOS / Linux
 source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
 ```
+
+> You should see `(venv)` at the start of your terminal prompt confirming the environment is active.
 
 ---
 
-### 3. Frontend setup
+### Step 3 — Install backend dependencies
 
 ```bash
-cd frontend
-npm install
+pip install -r backend/requirements.txt
 ```
 
 ---
 
-## Environment Variables
+### Step 4 — Create the backend environment file
 
-Create a `.env` file in the **project root**:
+Create a file named `.env.backend` inside the `backend/` folder:
+
+```
+backend/.env.backend
+```
+
+Add the following:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 TAVILY_API_KEY=your_tavily_api_key_here
 API_SECRET_KEY=your_chosen_secret_key_here
+MODEL=gpt-4.1-mini
 ```
 
-Create a `.env.local` file inside the **`frontend/`** folder:
+> `MODEL` controls which OpenAI model is used. `gpt-4.1-mini` is recommended for fast, high-quality responses.
+> This file is gitignored and will never be committed.
+
+---
+
+### Step 5 — Install frontend dependencies
+
+Open a new terminal and run:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+### Step 6 — Create the frontend environment file
+
+Create a file named `.env.frontend` inside the `frontend/` folder:
+
+```
+frontend/.env.frontend
+```
+
+Add the following:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEXT_PUBLIC_API_KEY=your_chosen_secret_key_here
 ```
 
-> `API_SECRET_KEY` and `NEXT_PUBLIC_API_KEY` must be the same value — this is how the frontend authenticates with the backend.
+> `NEXT_PUBLIC_API_KEY` must be the **exact same value** as `API_SECRET_KEY` in the backend env file. This is how the frontend authenticates with the backend.
+> This file is gitignored and will never be committed.
+
+---
+
+## Environment Variables
+
+### Backend — `backend/.env.backend`
+
+| Variable | Description |
+|---|---|
+| `OPENAI_API_KEY` | Your OpenAI API key |
+| `TAVILY_API_KEY` | Your Tavily search API key |
+| `API_SECRET_KEY` | A secret string used to authenticate frontend requests |
+| `MODEL` | OpenAI model to use (e.g. `gpt-4.1-mini`, `gpt-4o`) |
+
+### Frontend — `frontend/.env.frontend`
+
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | URL of the running backend (e.g. `http://localhost:8000`) |
+| `NEXT_PUBLIC_API_KEY` | Must match `API_SECRET_KEY` in the backend env file |
 
 ---
 
 ## Running the Platform
 
-### Start the backend
+### Step 7 — Start the backend
+
+In your terminal (with venv activated), run:
 
 ```bash
+cd backend
 uvicorn api.main:app --reload --port 8000
 ```
 
-- Backend API: `http://localhost:8000`
-- Interactive docs: `http://localhost:8000/docs`
+Expected output:
 
-### Start the frontend
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     Application startup complete.
+```
+
+- Backend API: `http://localhost:8000`
+- Interactive API docs: `http://localhost:8000/docs`
+
+---
+
+### Step 8 — Start the frontend
+
+Open a **second terminal** and run:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-- Frontend: `http://localhost:3000`
+Expected output:
+
+```
+✓ Ready in 1082ms
+- Local: http://localhost:3000
+```
+
+Open your browser at **`http://localhost:3000`**
+
+---
+
+## Verify Everything Works
+
+Once both backend and frontend are running:
+
+1. Open `http://localhost:3000`
+2. Type **"What is machine learning?"** — the Research Skill triggers and returns a structured summary with key points and sources
+3. Type **"Create a plan to build a mobile app"** — the Task Planning Skill triggers and returns an ordered task list with dependencies
+4. Type **"Hello"** — a direct response with no skill invoked
+
+Check the backend terminal for real-time logs:
+
+```
+AGENT DECISION --> RESEARCH SKILL selected
+AGENT DECISION --> TASK PLANNING SKILL selected
+```
+
+---
+
+## Production Build
+
+To run the frontend as a static build instead of dev mode:
+
+```bash
+cd frontend
+npm run build
+cd ..
+npx serve frontend/out -p 3000
+```
+
+Open your browser at **`http://localhost:3000`**
 
 ---
 
 ## API Reference
 
-All endpoints except `/health` require the `X-API-Key` header.
+All endpoints except `/health` require the `X-API-Key` header:
 
 ```
 X-API-Key: your_chosen_secret_key_here
