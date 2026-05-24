@@ -8,17 +8,45 @@ type Props = {
   isLoading: boolean;
 };
 
+const MAX_FILE_SIZE = 100 * 1024; // 100 KB
+
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}
+
 export default function InputBar({ onSend, onStop, isLoading }: Props) {
   const [text, setText] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSend = () => {
-    if (!text.trim() || isLoading) return;
-    onSend(text.trim());
+  const handleSend = async () => {
+    if (isLoading) return;
+    if (!text.trim() && !attachedFile) return;
+
+    let messageToSend = text.trim();
+
+    if (attachedFile) {
+      try {
+        const content = await readFileAsText(attachedFile);
+        const userText = messageToSend || `What's in this file?`;
+        messageToSend = `${userText}\n\n[Attached file: ${attachedFile.name}]\n\`\`\`\n${content}\n\`\`\``;
+      } catch {
+        setFileError("Could not read this file as text. Only text-based files are supported.");
+        return;
+      }
+    }
+
+    onSend(messageToSend);
     setText("");
     setAttachedFile(null);
+    setFileError("");
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -30,13 +58,30 @@ export default function InputBar({ onSend, onStop, isLoading }: Props) {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    setAttachedFile(file);
     e.target.value = "";
+
+    if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024} KB.`);
+      setAttachedFile(null);
+      return;
+    }
+
+    setFileError("");
+    setAttachedFile(file);
   };
 
   return (
     <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 px-4 py-4 shrink-0 rounded-b-2xl">
       <div className="max-w-3xl mx-auto">
+
+        {/* File error */}
+        {fileError && (
+          <div className="mb-2 px-3 py-1.5 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs rounded-lg">
+            {fileError}
+          </div>
+        )}
 
         {/* File chip */}
         {attachedFile && (
@@ -108,7 +153,7 @@ export default function InputBar({ onSend, onStop, isLoading }: Props) {
           ) : (
             <button
               onClick={handleSend}
-              disabled={!text.trim()}
+              disabled={!text.trim() && !attachedFile}
               className="p-2 bg-slate-600 text-white rounded-xl hover:bg-slate-700 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 mb-0.5 shadow-sm"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
