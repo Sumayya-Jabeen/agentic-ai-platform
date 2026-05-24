@@ -5,14 +5,17 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { UIMessage } from "@/lib/types";
+import { copyToClipboard } from "@/lib/clipboard";
 
 function CodeBlock({ language, children }: { language: string; children: string }) {
   const [copied, setCopied] = useState(false);
 
-  const copy = () => {
-    navigator.clipboard.writeText(children);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copy = async () => {
+    const ok = await copyToClipboard(children);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -73,9 +76,11 @@ export default function MessageBubble({ message, onRegenerate, onEditSend, onTog
   }, [isEditing, message.content]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const ok = await copyToClipboard(message.content);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleSave = () => {
