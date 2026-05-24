@@ -3,21 +3,12 @@
 import { useState, useRef, KeyboardEvent } from "react";
 
 type Props = {
-  onSend: (message: string) => void;
+  onSend: (message: string, file?: File | null) => void;
   onStop?: () => void;
   isLoading: boolean;
 };
 
 const MAX_FILE_SIZE = 100 * 1024; // 100 KB
-
-function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
-}
 
 export default function InputBar({ onSend, onStop, isLoading }: Props) {
   const [text, setText] = useState("");
@@ -26,24 +17,11 @@ export default function InputBar({ onSend, onStop, isLoading }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (isLoading) return;
     if (!text.trim() && !attachedFile) return;
 
-    let messageToSend = text.trim();
-
-    if (attachedFile) {
-      try {
-        const content = await readFileAsText(attachedFile);
-        const userText = messageToSend || `What's in this file?`;
-        messageToSend = `${userText}\n\n[Attached file: ${attachedFile.name}]\n\`\`\`\n${content}\n\`\`\``;
-      } catch {
-        setFileError("Could not read this file as text. Only text-based files are supported.");
-        return;
-      }
-    }
-
-    onSend(messageToSend);
+    onSend(text.trim(), attachedFile);
     setText("");
     setAttachedFile(null);
     setFileError("");

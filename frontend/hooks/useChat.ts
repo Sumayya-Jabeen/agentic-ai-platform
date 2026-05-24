@@ -8,6 +8,15 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}
+
 function detectSkill(reply: string): SkillType {
   const lower = reply.toLowerCase();
   const hasResearch =
@@ -30,13 +39,33 @@ export function useChat() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const isLoadingRef = useRef(false);
 
-  // ── Send a message ────────────────────────────────────────────────────────
-  const send = useCallback(async (text: string) => {
-    if (!text.trim() || isLoadingRef.current) return;
+  // ── Send a message (optionally with a file attachment) ────────────────────
+  const send = useCallback(async (text: string, file?: File | null) => {
+    if (isLoadingRef.current) return;
+    if (!text.trim() && !file) return;
     setError(null);
 
+    // If a file is attached, read its content. The content is sent to the
+    // backend silently as context — the user's chat bubble shows only their
+    // text + a file chip with the filename.
+    let fileContent = "";
+    let fileName = "";
+    if (file) {
+      try {
+        fileContent = await readFileAsText(file);
+        fileName = file.name;
+      } catch {
+        setError("Could not read this file. Only text-based files are supported.");
+        return;
+      }
+    }
+
     const userMessage: UIMessage = {
-      id: generateId(), role: "user", content: text.trim(), timestamp: new Date(),
+      id: generateId(),
+      role: "user",
+      content: text.trim(),
+      timestamp: new Date(),
+      attachmentName: fileName || undefined,
     };
     setMessages((prev) => [...prev, userMessage]);
 
@@ -52,9 +81,15 @@ export function useChat() {
 
     let fullContent = "";
 
+    // Combined payload for the LLM: user's text + file content (if any).
+    // This is what the backend and the model see — not what the user sees.
+    const backendMessage = fileContent
+      ? `${text.trim() || "Please look at the attached file."}\n\n[Attached file: ${fileName}]\n\`\`\`\n${fileContent}\n\`\`\``
+      : text.trim();
+
     try {
       const newSessionId = await streamMessage(
-        text.trim(),
+        backendMessage,
         sessionId,
         (token) => {
           fullContent += token;

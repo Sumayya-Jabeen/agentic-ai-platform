@@ -41,11 +41,12 @@ export type HealthResponse = {
 
 // Extends Message with UI-only fields not stored in the backend
 export type UIMessage = Message & {
-  id: string           // unique ID for React key prop
-  timestamp: Date      // when the message was sent
-  skill?: SkillType    // which skill was invoked (AI messages only)
-  isLoading?: boolean  // true while AI is still responding
+  id: string                // unique ID for React key prop
+  timestamp: Date           // when the message was sent
+  skill?: SkillType         // which skill was invoked (AI messages only)
+  isLoading?: boolean       // true while AI is still responding
   pinned?: boolean
+  attachmentName?: string   // filename of attachment (user messages only)
 }
 
 // Which skill the agent decided to invoke
