@@ -195,10 +195,15 @@ export default function ChatPage() {
         )}
 
         {/* ── Chat card ── */}
-        <div className="flex-1 overflow-hidden flex flex-col mx-4 my-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex-1 overflow-hidden flex flex-col mx-4 mt-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <ChatWindow messages={messages} onRegenerate={send} onEditSend={resendFromMessage} onTogglePin={togglePin} />
           <InputBar onSend={send} onStop={stop} isLoading={isLoading} />
         </div>
+
+        {/* ── Footer ── */}
+        <footer className="text-center text-xs text-slate-400 dark:text-slate-500 py-3 shrink-0">
+          © 2026 Designed by Sumayya Jabeen and Hurmath Jabeen
+        </footer>
 
       </div>
     </div>
